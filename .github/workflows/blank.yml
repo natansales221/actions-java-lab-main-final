@@ -1,108 +1,80 @@
-# Nome do fluxo de trabalho.
-name: Java CI/CD com StackHawk
+name: Java CI
 
-# Evento que aciona o fluxo de trabalho.
-on:
-  push:
-    branches:
-      - main
 
-# Definição de trabalhos (jobs) dentro do fluxo de trabalho.
+on: [push]
 jobs:
-  # Job para compilar o código.
   build:
-    name: Compilação
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v2
-
-      - name: Configurar JDK 17
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
 
-      - name: Compilar Aplicação
-        run: mvn --batch-mode --update-snapshots verify
-
-      - name: Upload do Artefato
-        uses: actions/upload-artifact@v2
+      - run: mvn --batch-mode --update-snapshots verify
+      - run: mkdir staging && cp target/*.jar staging
+      - uses: actions/upload-artifact@v3
         with:
-          name: meu-artefato
-          path: target/*.jar
+          name: Package
+          path: staging
 
-  # Job para a verificação de segurança com o StackHawk.
+
   stackhawk:
-    name: Verificação StackHawk
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for stackhawk/hawkscan-action to upload code scanning alert info
+    name: StackHawk
     runs-on: ubuntu-20.04
-    needs: build
+    needs: build  
 
     steps:
-      - name: Checkout do código
+      - name: Checkout code
         uses: actions/checkout@v3
     
-      - name: Baixar artefato
-        uses: actions/download-artifact@v2
+      - name: Download artifact
+        uses: actions/download-artifact@v3
         with:
-          name: meu-artefato
+          name: Package
 
-      - name: Iniciar seu serviço
+      - name: Start your service
         run: java -jar actions-java-lab-1.0-SNAPSHOT-jar-with-dependencies.jar &
 
-      - name: Executar o HawkScan
+      - name: Run HawkScan
         uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0
-        continue-on-error: true
+        continue-on-error: true                   # ✏️ Set to false to break your build on scan errors
         with:
           apiKey: ${{ secrets.HAWK_API_KEY }}
           codeScanningAlerts: true
           githubToken: ${{ github.token }}
 
-  # Job para a análise de segurança com o CodeQL.
-  security_analysis:
-    name: Análise de Segurança
-    runs-on: ubuntu-latest
-    needs: stackhawk
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
 
-    steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v2
 
-      - name: Inicializar o CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: java-kotlin
+#           🦅 STACKHAWK        https://stackhawk.com
 
-      - name: Executar a Análise CodeQL
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:java-kotlin"
+# The StackHawk HawkScan action makes it easy to integrate dynamic application security testing (DAST) into your
+# CI pipeline. See the Getting Started guide (https://docs.stackhawk.com/hawkscan/) to get up and running with
+# StackHawk quickly.
 
-  # Job para realizar o deploy.
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    needs: security_analysis
-
-    steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v2
-
-      - name: Deploy no Servidor
-        run: |
-          # Comandos para fazer o deploy da sua aplicação no servidor
-
-  # Job para evidenciar informações.
-  evidence:
-    name: Evidências
-    runs-on: ubuntu-latest
-    needs: deploy
-
-    steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v2
-
-      - name: Exibir processos em execução
-        run: ps aux
+# To use this workflow, you must:
+#
+# 1.  Create an API Key and Application: Sign up for a free StackHawk account to obtain an API Key and
+#     create your first app and configuration file at https://app.stackhawk.com.
+#
+# 2.  Save your API Key as a Secret: Save your API key as a GitHub Secret named HAWK_API_KEY.
+#
+# 3.  Add your Config File: Add your stackhawk.yml configuration file to the base of your repository directory.
+#
+# 4.  Set the Scan Failure Threshold: Add the hawk.failureThreshold configuration option
+#     (https://docs.stackhawk.com/hawkscan/configuration/#hawk) to your stackhawk.yml configuration file. If your scan
+#     produces alerts that meet or exceed the hawk.failureThreshold alert level, the scan will return exit code 42
+#     and trigger a Code Scanning alert with a link to your scan results.
+#
+# 5.  Update the "Start your service" Step: Update the "Start your service" step in the StackHawk workflow below to
+#     start your service so that it can be scanned with the "Run HawkScan" step.

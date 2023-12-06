@@ -42,15 +42,16 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
     
       - name: Baixar artefato
         uses: actions/download-artifact@v2
         with:
           name: meu-artefato
+          path: target
 
       - name: Iniciar seu serviço
-        run: java -jar actions-java-lab-1.0-SNAPSHOT-jar-with-dependencies.jar &
+        run: java -jar target/actions-java-lab-1.0-SNAPSHOT-jar-with-dependencies.jar &
 
       - name: Executar o HawkScan
         uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0

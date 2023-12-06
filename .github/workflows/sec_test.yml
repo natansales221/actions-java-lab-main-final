@@ -1,59 +1,30 @@
 name: Java CI
 
 on: [push]
+
 jobs:
   security_analysis:
-      name: Security Analysis
-      runs-on: ubuntu-latest
-  
-      needs: build
-  
-      steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-  
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: java-kotlin
-          # Adicione suas consultas de CodeQL aqui se necessário
-          analyze:
-            name: Analyze
-  
-            runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-            timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
-            permissions:
-              actions: read
-              contents: read
-              security-events: write
-  
-            strategy:
-              fail-fast: false
-              matrix:
-                language: [ 'java-kotlin' ]
-  
-  
-            steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
-  
-            # Initializes the CodeQL tools for scanning.
-            - name: Initialize CodeQL
-              uses: github/codeql-action/init@v2
-              with:
-                languages: ${{ matrix.language }}
-  
-            - name: Autobuild
-              uses: github/codeql-action/autobuild@v2
-  
-  
-            - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@v2
-              with:
-                category: "/language:${{matrix.language}}"
-  
-  
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:java-kotlin"
+    name: Security Analysis
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java-kotlin' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Build with Maven
+      run: mvn clean install
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:${{ matrix.language }}"

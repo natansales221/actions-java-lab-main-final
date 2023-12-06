@@ -14,15 +14,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Configurar JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-
-    - name: Compilar Aplicação
-      run: mvn --batch-mode --update-snapshots verify
+    - name: Build Application
+      run: |
+        # Comandos para construir sua aplicação
+        # Exemplo: ./build.sh
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v2

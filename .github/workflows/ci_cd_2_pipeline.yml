@@ -1,0 +1,74 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do Código
+      uses: actions/checkout@v2
+
+    - name: Build
+      run: |
+        # Comandos para construir o projeto
+        make build
+
+    - name: Criação do Artefato
+      run: |
+        # Comandos para criar o artefato
+        mkdir dist
+        cp -r * dist/
+      artifacts:
+        path: dist
+
+  security_analysis:
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+    - name: Checkout do Código
+      uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: |
+        # Comandos para instalar dependências necessárias para as análises de segurança
+        make install-dependencies
+
+    - name: Análise SAST
+      run: |
+        # Comandos para executar a análise SAST
+        make sast-analysis
+
+    - name: Análise DAST
+      run: |
+        # Comandos para executar a análise DAST
+        make dast-analysis
+
+    - name: Evidência do Repositório com SCA e Proteção de Credenciais
+      run: |
+        # Comandos para executar a análise de SCA e proteção de credenciais
+        make sca-analysis
+        make credentials-protection-analysis
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    needs: security_analysis
+
+    steps:
+    - name: Checkout do Código
+      uses: actions/checkout@v2
+
+    - name: Deploy no Servidor de Aplicação
+      run: |
+        # Comandos para executar o deploy no servidor de aplicação
+        make deploy
+
+    - name: Evidência da Aplicação em Execução no Servidor
+      run: ps aux

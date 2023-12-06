@@ -1,4 +1,4 @@
-name: Deploy Infrastructure
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,23 +6,70 @@ on:
       - main
 
 jobs:
-  deploy:
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout do Código
+    - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Configurar Terraform
-      uses: hashicorp/setup-terraform@v1
+    - name: Build Application
+      run: |
+        # Comandos para construir sua aplicação
+        # Exemplo: ./build.sh
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v2
       with:
-        terraform_version: 1.0.0
+        name: my-artifact
+        path: path/to/artifact
 
-    - name: Inicializar Terraform
-      run: terraform init
+  security_analysis:
+    name: Security Analysis
+    runs-on: ubuntu-latest
 
-    - name: Validar Configuração Terraform
-      run: terraform validate
+    needs: build
 
-    - name: Aplicar Infraestrutura
-      run: terraform apply -auto-approve
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: java-kotlin
+        # Adicione suas consultas de CodeQL aqui se necessário
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:java-kotlin"
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    needs: security_analysis
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Deploy to Server
+      run: |
+        # Comandos para fazer o deploy da sua aplicação no servidor
+
+  evidence:
+    name: Evidence
+    runs-on: ubuntu-latest
+
+    needs: deploy
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Show Running Processes
+      run: ps aux
+

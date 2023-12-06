@@ -14,11 +14,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Build Application
-      run: |
-        # Comandos para construir sua aplicação
-        # Exemplo: ./build.sh
-
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
@@ -26,25 +21,31 @@ jobs:
         path: path/to/artifact
 
   security_analysis:
-    name: Security Analysis
-    runs-on: ubuntu-latest
+    permissions:
+        contents: read # for actions/checkout to fetch code
+        security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+        actions: read # o
 
-    needs: build
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: java-kotlin
-        # Adicione suas consultas de CodeQL aqui se necessário
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
-      with:
-        category: "/language:java-kotlin"
+      name: Security Analysis
+      runs-on: ubuntu-latest
+  
+      needs: build
+  
+      steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+  
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: java-kotlin
+          # Adicione suas consultas de CodeQL aqui se necessário
+  
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:java-kotlin"
+  
 
   stackhawk:
     permissions:
@@ -57,47 +58,111 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-    
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: my-artifact
 
       - name: Start your service
-        run: java -jar actions-java-lab-1.0-SNAPSHOT-jar-with-dependencies.jar &
+        run: ./your-service.sh &                  # ✏️ Update this to run your own service to be scanned
 
       - name: Run HawkScan
         uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0
-        continue-on-error: true
+        continue-on-error: true                   # ✏️ Set to false to break your build on scan errors
         with:
           apiKey: ${{ secrets.HAWK_API_KEY }}
           codeScanningAlerts: true
           githubToken: ${{ github.token }}
+
 
   codacy-security-scan:
     permissions:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
+      needs: security_analysis
     name: Codacy Security Scan
     runs-on: ubuntu-latest
-    needs: security_analysis
-
     steps:
+      # Checkout the repository to the GitHub Actions runner
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
         with:
+          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
+          # You can also omit the token and run the tools that support default configurations
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
           output: results.sarif
           format: sarif
+          # Adjust severity of non-security issues
           gh-code-scanning-compat: true
+          # Force 0 exit code to allow SARIF file generation
+          # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
 
+      # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.sarif
+  
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    needs: security_analysis
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Deploy to Server
+      run: |
+          # Comandos para fazer o deploy da sua aplicação no servidor
+  
+  evidence:
+    name: Evidence
+    runs-on: ubuntu-latest
+
+    needs: deploy
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Show Running Processes
+      run: ps aux
+  analyze:
+    name: Analyze
+    # Runner size impacts CodeQL analysis time. To learn more, please see:
+    #   - https://gh.io/recommended-hardware-resources-for-running-codeql
+    #   - https://gh.io/supported-runners-and-hardware-resources
+    #   - https://gh.io/using-larger-runners
+    # Consider using larger runners for possible analysis time improvements.
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java-kotlin' ]
+        # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
+        # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
+        # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
+        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+
+  

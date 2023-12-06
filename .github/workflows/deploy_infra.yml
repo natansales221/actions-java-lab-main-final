@@ -19,17 +19,15 @@ jobs:
         # Comandos para construir sua aplicação
         # Exemplo: ./build.sh
 
-        # Mudança para o diretório do projeto
-        cd actions-java-lab-main-final/._pom.xml
-
         # Execução do Maven com o caminho específico para o pom.xml
-        mvn --batch-mode --update-snapshots verify
+        mvn --batch-mode --update-snapshots verify -f actions-java-lab-main-final/._pom.xml/pom.xml
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
         name: my-artifact
-        path: actions-java-lab-main-final/._pom.xml/path/to/artifact
+        path: actions-java-lab-main-final/._pom.xml
+
 
   security_analysis:
     name: Security Analysis

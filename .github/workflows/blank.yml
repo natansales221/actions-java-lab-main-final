@@ -100,7 +100,6 @@ jobs:
     timeout-minutes: 360
     permissions:
       actions: read
-      contents: read
       security-events: write
   
     strategy:
@@ -124,6 +123,7 @@ jobs:
         uses: github/codeql-action/analyze@v2
         with:
           category: "/language:${{ matrix.language }}"
+
 
   deploy:
     name: Deploy

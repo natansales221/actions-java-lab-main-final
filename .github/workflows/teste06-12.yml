@@ -16,20 +16,14 @@ jobs:
 
     - name: Build Application
       run: |
-        # Comandos para construir sua aplicação
-        # Exemplo: ./build.sh
-
-        # Mudança para o diretório do projeto
-        cd _pom.xml
-
-        # Execução do Maven com o caminho específico para o pom.xml
-        mvn --batch-mode --update-snapshots verify
+        # Commands to build your application
+        # Example: ./build.sh
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
         name: my-artifact
-        path: _pom.xml/path/to/artifact
+        path: path/to/artifact
 
   security_analysis:
     name: Security Analysis
@@ -45,103 +39,91 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: java-kotlin
-        # Adicione suas consultas de CodeQL aqui se necessário
+
+    - name: StackHawk
+      runs-on: ubuntu-20.04
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - name: Start your service
+          run: ./your-service.sh &
+
+        - name: Run HawkScan
+          uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0
+          continue-on-error: true
+          with:
+            apiKey: ${{ secrets.HAWK_API_KEY }}
+            codeScanningAlerts: true
+            githubToken: ${{ github.token }}
+
+    - name: Codacy Security Scan
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
+
+        - name: Run Codacy Analysis CLI
+          uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
+          with:
+            project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+            verbose: true
+            output: results.sarif
+            format: sarif
+            gh-code-scanning-compat: true
+            max-allowed-issues: 2147483647
+
+        - name: Upload SARIF results file
+          uses: github/codeql-action/upload-sarif@v2
+          with:
+            sarif_file: results.sarif
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:java-kotlin"
 
-  stackhawk:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for stackhawk/hawkscan-action to upload code scanning alert info
-    name: StackHawk
-    runs-on: ubuntu-20.04
-    needs: security_analysis  
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-    
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: my-artifact
-
-      - name: Start your service
-        run: java -jar actions-java-lab-1.0-SNAPSHOT-jar-with-dependencies.jar &
-
-      - name: Run HawkScan
-        uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0
-        continue-on-error: true
-        with:
-          apiKey: ${{ secrets.HAWK_API_KEY }}
-          codeScanningAlerts: true
-          githubToken: ${{ github.token }}
-
   codacy-security-scan:
     permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
-    name: Codacy Security Scan
-    runs-on: ubuntu-latest
-    needs: security_analysis
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Run Codacy Analysis CLI
-        uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
-        with:
-          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          verbose: true
-          output: results.sarif
-          format: sarif
-          gh-code-scanning-compat: true
-          max-allowed-issues: 2147483647
-
-      - name: Upload SARIF results file
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: results.sarif
-  analyze:
-    name: Analyze
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
-    permissions:
-      actions: read
       contents: read
       security-events: write
-
+      actions: read
+    
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      security-events: write
+  
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java-kotlin' ]
-
+        language: ['java-kotlin']
+  
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+  
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+  
+      - name: Build with Maven
+        run: mvn clean install
+  
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{ matrix.language }}"
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: ${{ matrix.language }}
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
-
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
-      with:
-        category: "/language:${{matrix.language}}"
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
 
-    needs: security_analysis
+    needs: codacy-security-scan
 
     steps:
     - name: Checkout repository
@@ -149,7 +131,7 @@ jobs:
 
     - name: Deploy to Server
       run: |
-        # Comandos para fazer o deploy da sua aplicação no servidor
+        # Commands to deploy your application on the server
 
   evidence:
     name: Evidence
@@ -163,5 +145,3 @@ jobs:
 
     - name: Show Running Processes
       run: ps aux
-
-

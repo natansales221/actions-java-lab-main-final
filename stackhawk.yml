@@ -1,12 +1,38 @@
+# app:
+#   applicationId: a6f0e4ab-aa4e-48a4-af18-c025e6cdea61
+#   env: Development
+#   host: http://localhost:10010
+# tags:
+#   - name: _STACKHAWK_GIT_COMMIT_SHA
+#     value: ${ENV_VAR_FOR_COMMIT_SHA}
+#   - name: _STACKHAWK_GIT_BRANCH
+#     value: ${ENV_VAR_FOR_BRANCH}
+# hawk:
+#   # Add this if you want pull request comments to specifically call out findings at or above a failure threshold.
+#   failureThreshold: medium
+
 app:
-  applicationId: a6f0e4ab-aa4e-48a4-af18-c025e6cdea61
-  env: Development
   host: http://localhost:10010
-tags:
-  - name: _STACKHAWK_GIT_COMMIT_SHA
-    value: ${ENV_VAR_FOR_COMMIT_SHA}
-  - name: _STACKHAWK_GIT_BRANCH
-    value: ${ENV_VAR_FOR_BRANCH}
+  antiCsrfParam: ""
+  applicationId: 687d2f49-3757-4ef4-b48f-f65a3293fc58
+  env: Development
+  autoPolicy: false
+  autoInputVectors: false
 hawk:
-  # Add this if you want pull request comments to specifically call out findings at or above a failure threshold.
+  spider:
+    base: true
+    ajax: false
+    maxDurationMinutes: 5
+    ajaxBrowser: FIREFOX_HEADLESS
+  startupTimeoutMinutes: 5
   failureThreshold: medium
+  scan:
+    maxDurationMinutes: "0"
+    maxRuleDurationMinutes: "0"
+    requestDelayMillis: "0"
+    concurrentRequests: "20"
+    throttlePassiveBacklog: "50"
+    policyName: ""
+    throttleIntervalSeconds: "0"
+    throttleTempRecordMax: "0"
+    throttleTempRecordDeleteQuota: "0"

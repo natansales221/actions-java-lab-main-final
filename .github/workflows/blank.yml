@@ -19,22 +19,7 @@ jobs:
       with:
         name: my-artifact
         path: path/to/artifact
-  # security_analysis:
-  #   name: Security Analysis
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   steps:
-  #   - name: Checkout repository
-  #     uses: actions/checkout@v2
-  #   - name: Initialize CodeQL
-  #     uses: github/codeql-action/init@v2
-  #     with:
-  #       languages: java-kotlin
-  #       # Adicione suas consultas de CodeQL aqui se necessário
-  #   - name: Perform CodeQL Analysis
-  #     uses: github/codeql-action/analyze@v2
-  #     with:
-  #       category: "/language:java-kotlin"
+
   stackhawk:
     permissions:
       contents: read # for actions/checkout to fetch code
@@ -86,35 +71,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.sarif
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    timeout-minutes: 360
-    permissions:
-      actions: read
-      security-events: write
-  
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ['java-kotlin']
-  
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-  
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: ${{ matrix.language }}
-  
-      - name: Build with Maven
-        run: mvn clean install
-  
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:${{ matrix.language }}"
   deploy:
     name: Deploy
     runs-on: ubuntu-latest

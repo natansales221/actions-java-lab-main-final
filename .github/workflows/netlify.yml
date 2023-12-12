@@ -115,7 +115,7 @@ jobs:
       - name: Deploy to Netlify
         run: netlify deploy --prod
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.main@7e6e5ef }}
 
   evidence:
     name: Evidence

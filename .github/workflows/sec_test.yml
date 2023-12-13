@@ -9,86 +9,70 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Build Application
-      run: |
-        # Commands to build your application
-        # Example: ./build.sh
+      - name: Build Application
+        run: |
+          # Comandos para construir sua aplicação
+          # Exemplo: ./build.sh
 
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: my-artifact
-        path: path/to/artifact
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: path/to/artifact
 
-  security_analysis:
-    name: Security Analysis
-    runs-on: ubuntu-latest
-
+  stackhawk:
+    permissions:
+      contents: read
+      security-events: write
+    name: StackHawk
+    runs-on: ubuntu-20.04
     needs: build
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: java-kotlin
+      - name: Start your service
+        run: ./your-service.sh &
 
-    - name: StackHawk
-      runs-on: ubuntu-20.04
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
-
-        - name: Start your service
-          run: ./your-service.sh &
-
-        - name: Run HawkScan
-          uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0
-          continue-on-error: true
-          with:
-            apiKey: ${{ secrets.HAWK_API_KEY }}
-            codeScanningAlerts: true
-            githubToken: ${{ github.token }}
-
-    - name: Codacy Security Scan
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
-
-        - name: Run Codacy Analysis CLI
-          uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
-          with:
-            project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-            verbose: true
-            output: results.sarif
-            format: sarif
-            gh-code-scanning-compat: true
-            max-allowed-issues: 2147483647
-
-        - name: Upload SARIF results file
-          uses: github/codeql-action/upload-sarif@v2
-          with:
-            sarif_file: results.sarif
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
-      with:
-        category: "/language:java-kotlin"
+      - name: Run HawkScan
+        uses: stackhawk/hawkscan-action@4c3258cd62248dac6d9fe91dd8d45928c697dee0
+        continue-on-error: true
+        with:
+          apiKey: ${{ secrets.HAWK_API_KEY }}
+          codeScanningAlerts: true
+          githubToken: ${{ github.token }}
 
   codacy-security-scan:
     permissions:
       contents: read
       security-events: write
       actions: read
-    
+    name: Codacy Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run Codacy Analysis CLI
+        uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          verbose: true
+          output: results.sarif
+          format: sarif
+          gh-code-scanning-compat: true
+          max-allowed-issues: 2147483647
+
+      - name: Upload SARIF results file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
@@ -120,28 +104,17 @@ jobs:
           category: "/language:${{ matrix.language }}"
 
   deploy:
-    name: Deploy
+    name: Deploy to Some Place
     runs-on: ubuntu-latest
-
-    needs: codacy-security-scan
-
+    needs: analyze
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Deploy to Server
-      run: |
-        # Commands to deploy your application on the server
+      - name: Copy code to destination
+        run: |
+          # Crie o diretório de destino se não existir
+          mkdir -p https://github.com/natansales221/devopssenac/tree/main/.github/workflows
 
-  evidence:
-    name: Evidence
-    runs-on: ubuntu-latest
-
-    needs: deploy
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Show Running Processes
-      run: ps aux
+          # Copie todos os arquivos do diretório de trabalho para o diretório de destino
+          cp -r . https://github.com/natansales221/devopssenac/tree/main/.github/workflows

@@ -140,6 +140,6 @@ jobs:
         run: ps aux
 
       - name: Send Evidence to Netlify
-        run: curl -X POST -d '{"message":"Evidence from GitHub Actions"}'https://bright-lokum-b274f4.netlify.app
+        run: curl -X POST -d '{"message":"Evidence from GitHub Actions"}'https://creative-strudel-21e26d.netlify.app
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

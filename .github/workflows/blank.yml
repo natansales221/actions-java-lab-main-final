@@ -105,26 +105,38 @@ jobs:
         uses: github/codeql-action/analyze@v2
         with:
           category: "/language:${{ matrix.language }}"
-
-  
+          
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-
+    needs:
+      - codacy-security-scan
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Deploy to Server
+        run: |
+          Commands to deploy your application on the server
+  
+  # deploy:
+  #   name: Deploy
+  #   runs-on: ubuntu-latest
 
-      - name: Build
-        run: npm run build
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
 
-      - name: Deploy to Netlify
-        run: npx netlify-cli deploy --prod
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+  #     - name: Install Dependencies
+  #       run: npm install
+
+  #     - name: Build
+  #       run: npm run build
+
+  #     - name: Deploy to Netlify
+  #       run: npx netlify-cli deploy --prod
+  #       env:
+  #         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
           
 

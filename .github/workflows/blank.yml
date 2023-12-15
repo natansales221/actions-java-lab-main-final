@@ -106,18 +106,18 @@ jobs:
         with:
           category: "/language:${{ matrix.language }}"
           
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    needs:
-      - codacy-security-scan
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+  # deploy:
+  #   name: Deploy
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - codacy-security-scan
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v2
 
-      - name: Deploy to Server
-        run: |
-          Commands to deploy your application on the server
+  #     - name: Deploy to Server
+  #       run: |
+  #         Commands to deploy your application on the server
   
   # deploy:
   #   name: Deploy
